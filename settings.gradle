@@ -1,0 +1,18 @@
+// Not "davkit-grails-plugin": that name belongs to the published module below, and a root project
+// sharing a subproject's name makes task paths ambiguous.
+rootProject.name = "davkit-grails"
+
+include "grails-plugin", "demo-grails"
+
+// The directory keeps its role-name; the published coordinates are
+// com.tucanoo.davkit:davkit-grails-plugin (group from the root build, artifactId from here).
+project(":grails-plugin").name = "davkit-grails-plugin"
+
+// Sibling checkouts win over Maven so a change upstream needs no publish step. Each is optional:
+// with neither present, both coordinates resolve normally, which is the contributor's path.
+if (file("../davkit-core").isDirectory()) {
+    includeBuild("../davkit-core")
+}
+if (file("../davkit-spring-boot").isDirectory()) {
+    includeBuild("../davkit-spring-boot")
+}

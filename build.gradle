@@ -1,0 +1,325 @@
+import java.util.zip.ZipFile
+
+// demo-grails is a reference host and is never published.
+allprojects {
+    group = "com.tucanoo.davkit"
+    // version comes from gradle.properties; kept in lockstep across the three repositories.
+}
+
+// Central rejects -SNAPSHOT on the release endpoint. The guard still runs on snapshots — that is
+// what keeps it exercised between releases — but the signature check switches on here.
+ext.isRelease = !version.toString().endsWith("-SNAPSHOT")
+
+ext.repoUrl = "https://github.com/tucanoo/davkit-grails-plugin"
+ext.productUrl = "https://tucanoo.com/products/davkit"
+ext.licenseName = "The Apache License, Version 2.0"
+
+// The exact bytes destined for Central: a local Maven-layout directory, so the guard inspects the
+// real signed artifacts and the same directory becomes the Portal upload bundle.
+ext.stagingRepoDir = layout.buildDirectory.dir("staging-deploy")
+
+tasks.register("cleanStagingRepo", Delete) {
+    description = "Empties the staging repository so a stale version cannot ride along in the bundle."
+    delete stagingRepoDir
+}
+
+tasks.register("stageRelease") {
+    group = "publishing"
+    description = "Cleans and repopulates build/staging-deploy with the signed release artifacts."
+    dependsOn tasks.named("cleanStagingRepo")
+}
+
+subprojects {
+    // Java 17 is the common baseline for Grails 7 and the Spring Boot 3/4 wrapper chain.
+    // The toolchain also sets the org.gradle.jvm.version attribute used for variant matching.
+    plugins.withId("java") {
+        java {
+            toolchain {
+                languageVersion = JavaLanguageVersion.of(17)
+            }
+            withSourcesJar()
+        }
+        tasks.withType(JavaCompile).configureEach {
+            options.encoding = "UTF-8"
+            options.release = 17
+            options.compilerArgs.addAll(["-Xlint:all,-serial,-processing", "-Werror", "-parameters"])
+        }
+        tasks.withType(Test).configureEach {
+            useJUnitPlatform()
+        }
+    }
+
+    if (name == "davkit-grails-plugin") {
+        apply plugin: "maven-publish"
+        apply plugin: "signing"
+        plugins.withId("java") {
+            // The plugin is pure Groovy, so the javadoc task has nothing to document. Central
+            // still requires a -javadoc.jar, and Groovydoc is the real API documentation for
+            // this module, so the jar is built from that rather than shipped empty.
+            def javadocJar = tasks.register("javadocJar", Jar) {
+                archiveClassifier = "javadoc"
+                // This block runs as the java plugin is applied; groovydoc only arrives with the
+                // Groovy plugin a moment later, so the source is resolved lazily.
+                from({ tasks.named("groovydoc") })
+            }
+
+            publishing {
+                publications {
+                    maven(MavenPublication) {
+                        from components.java
+                        artifact javadocJar
+                        pom {
+                            name = "DavKit Grails plugin"
+                            description = "DavKit Grails plugin: taglib, GORM resource provider base class, auto-wiring for Grails 7 and 8."
+                            url = repoUrl
+                            licenses {
+                                license {
+                                    name = licenseName
+                                    url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                                    distribution = "repo"
+                                }
+                            }
+                            developers {
+                                developer {
+                                    id = "dave"
+                                    name = "David Brown"
+                                    email = "dave@tucanoo.com"
+                                    organization = "Tucanoo Solutions Ltd"
+                                    organizationUrl = "https://tucanoo.com"
+                                }
+                            }
+                            scm {
+                                connection = "scm:git:https://github.com/tucanoo/davkit-grails-plugin.git"
+                                developerConnection = "scm:git:ssh://git@github.com/tucanoo/davkit-grails-plugin.git"
+                                url = repoUrl
+                            }
+                            organization {
+                                name = "Tucanoo Solutions Ltd"
+                                url = productUrl
+                            }
+                        }
+                    }
+                }
+                repositories {
+                    maven {
+                        name = "staging"
+                        url = rootProject.layout.buildDirectory.dir("staging-deploy").get().asFile.toURI()
+                    }
+                }
+            }
+
+            signing {
+                // Delegates to the local gpg, so the passphrase reaches gpg-agent and never a
+                // Gradle property or a file. Set signing.gnupg.keyName in ~/.gradle/gradle.properties
+                // (and signing.gnupg.executable=gpg on MacGPG2). Not required for snapshots, so a
+                // clean contributor checkout still builds without a key.
+                useGpgCmd()
+                required = isRelease
+                sign publishing.publications.maven
+            }
+
+            // The Grails Gradle plugin contributes grails-bom and spring-boot-dependencies as
+            // imported BOMs, which maven-publish writes into the POM's <dependencyManagement>. The
+            // Gradle module metadata declares no such constraints, so the two descriptors promised
+            // different things: a POM-reading (Maven) consumer would inherit Grails 7.2.2 and Boot
+            // 3.5.x constraints, which is exactly what the single-plugin-for-7-and-8 policy forbids
+            // (see the dependencies block in grails-plugin/build.gradle). Gradle consumers were
+            // never affected — they prefer the module metadata — but a POM on Central is permanent,
+            // so it should say what the plugin actually promises.
+            //
+            // Done by rewriting the generated file rather than with pom.withXml: the Grails plugin
+            // adds the element from its own withXml, registered from its own afterEvaluate, so it
+            // always runs after anything this script can register and there is nothing there yet to
+            // remove. Editing the generated POM is the one point that is unambiguously last.
+            //
+            // Safe to strip — the sole declared dependency carries an explicit version, so nothing
+            // relies on a managed one. The guard fails the build if the element ever returns.
+            tasks.named("generatePomFileForMavenPublication").configure {
+                doLast {
+                    def pomFile = destination
+                    def text = pomFile.text
+                    def stripped = text.replaceAll(
+                        /(?s)\n?[ \t]*<dependencyManagement>.*?<\/dependencyManagement>/, "")
+                    if (stripped != text) {
+                        pomFile.text = stripped
+                        logger.info("Removed <dependencyManagement> from the published POM.")
+                    }
+                }
+            }
+
+            def publishToStaging = tasks.named("publishMavenPublicationToStagingRepository")
+            publishToStaging.configure { mustRunAfter rootProject.tasks.named("cleanStagingRepo") }
+            rootProject.tasks.named("stageRelease").configure { dependsOn publishToStaging }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Release artifact guard
+//
+// This repository must publish real sources under Apache 2.0, must depend on the starter at the
+// exact matching version, and must never ship the demo application or test material.
+// ---------------------------------------------------------------------------
+
+ext.forbiddenEntries = [
+    "com/tucanoo/davkit/license/cli/": "license-cli classes",
+    "captures/"                      : "recorded Office traffic",
+    "demo/"                          : "demo host classes",
+    ".env"                           : "an environment file",
+]
+
+// Binary jars only. A stray application.yml on a plugin's runtime classpath can influence the
+// host application's configuration; the same file inside the sources jar is just source, and the
+// Grails plugin skeleton legitimately keeps one under grails-app/conf.
+ext.forbiddenInBinary = [
+    "application.yml" : "a host application config",
+    "application.groovy": "a host application config",
+]
+
+ext.pemPrivateKey = ~/-----BEGIN (?:[A-Z ]+ )?PRIVATE KEY-----/
+
+tasks.register("verifyReleaseArtifacts") {
+    group = "verification"
+    description = "Inspects the staged Central artifacts for licence, dependency and packaging mistakes."
+    dependsOn tasks.named("stageRelease")
+
+    def reportFile = layout.buildDirectory.file("reports/release-artifacts/inventory.txt")
+    def stagingDir = stagingRepoDir
+    def versionString = version.toString()
+    def release = isRelease
+    def expectedLicence = licenseName
+    def forbidden = forbiddenEntries
+    def forbiddenBinaryOnly = forbiddenInBinary
+    def pemPattern = pemPrivateKey
+
+    outputs.file reportFile
+    // Never up to date: this task's real inputs are the staged artifacts, which Gradle cannot
+    // see through the publish tasks. Left to infer, it can skip verification on a later run —
+    // and a guard that can be skipped is not a guard.
+    outputs.upToDateWhen { false }
+
+    doLast {
+        def failures = []
+        def inventory = new StringBuilder("DavKit Grails plugin release artifacts — version ${versionString}\n\n")
+
+        def moduleDir = new File(
+            stagingDir.get().asFile, "com/tucanoo/davkit/davkit-grails-plugin/${versionString}")
+        if (!moduleDir.isDirectory()) {
+            throw new GradleException("No staged artifacts at ${moduleDir} — run stageRelease first.")
+        }
+
+        def files = moduleDir.listFiles().sort { it.name }
+        def names = files.collect { it.name } as Set
+
+        // Snapshots carry a unique timestamped name, releases the plain version; derive from the POM.
+        def poms = files.findAll { it.name.endsWith(".pom") }
+        if (poms.size() != 1) {
+            throw new GradleException("Expected exactly one .pom in ${moduleDir}, found ${poms*.name}")
+        }
+        def pomFile = poms[0]
+        def base = pomFile.name - ".pom"
+
+        // 1. Everything Central expects, sources included — this artifact is open source.
+        //    toString() throughout: a GString never equals the String it renders to, so a Set
+        //    lookup with one silently misses (and reported every artifact as absent when it wasn't).
+        def required = ["${base}.jar", "${base}-sources.jar", "${base}-javadoc.jar", "${base}.pom"]
+            *.toString()
+        required.findAll { !names.contains(it) }.each { failures << "missing required artifact: ${it}" }
+
+        required.findAll { names.contains(it) }.each { artifact ->
+            ["md5", "sha1"].each { sum ->
+                if (!names.contains("${artifact}.${sum}".toString())) {
+                    failures << "missing checksum: ${artifact}.${sum}"
+                }
+            }
+            if (release && !names.contains("${artifact}.asc".toString())) {
+                failures << "missing signature: ${artifact}.asc"
+            }
+        }
+
+        // 2. The sources jar carries real source, not an empty shell.
+        def sourcesJar = new File(moduleDir, "${base}-sources.jar")
+        if (sourcesJar.isFile()) {
+            def sourceCount = new ZipFile(sourcesJar).withCloseable { zip ->
+                zip.entries().toList().count { it.name.endsWith(".groovy") || it.name.endsWith(".java") }
+            }
+            if (sourceCount == 0) failures << "the sources jar contains no Groovy or Java source"
+            inventory.append("${base}-sources.jar — ${sourceCount} sources\n")
+        }
+
+        // 3. Nothing internal or host-specific inside the archives.
+        files.findAll { it.name.endsWith(".jar") }.each { jar ->
+            new ZipFile(jar).withCloseable { zip ->
+                def entries = zip.entries().toList()
+                inventory.append("${jar.name} — ${entries.size()} entries\n")
+                def isSourcesJar = jar.name.endsWith("-sources.jar")
+                entries.each { entry ->
+                    def rules = isSourcesJar ? forbidden : forbidden + forbiddenBinaryOnly
+                    rules.each { needle, what ->
+                        if (entry.name.contains(needle)) {
+                            failures << "${jar.name} contains ${what}: ${entry.name}"
+                        }
+                    }
+                    if (entry.name.endsWith("Test.class") || entry.name.endsWith("Tests.class") ||
+                        entry.name.endsWith("Spec.class") || entry.name.endsWith("IT.class")) {
+                        failures << "${jar.name} contains test classes: ${entry.name}"
+                    }
+                    if (!entry.isDirectory() && entry.size > 0 && entry.size <= 1_048_576) {
+                        def text = new String(zip.getInputStream(entry).bytes, "ISO-8859-1")
+                        if (pemPattern.matcher(text).find()) {
+                            failures << "${jar.name} contains a PEM private key: ${entry.name}"
+                        }
+                    }
+                }
+            }
+        }
+
+        // 4. Apache 2.0, and the starter pinned to this exact version — never a range. A mismatch
+        //    here is the failure the lockstep scheme exists to prevent.
+        def text = pomFile.text
+        if (!text.contains("<name>${expectedLicence}</name>")) {
+            failures << "plugin POM does not declare ${expectedLicence}"
+        }
+        if (text.contains("DavKit Commercial")) {
+            failures << "plugin POM declares the commercial licence — wrong licence policy for the Apache 2.0 plugin"
+        }
+        // The POM must promise exactly what the Gradle module metadata promises. An imported BOM
+        // here would pin Grails and Spring versions on Maven consumers, which the
+        // single-plugin-for-7-and-8 policy forbids; the publication strips it, and this catches a
+        // regression if the Grails Gradle plugin reintroduces one.
+        if (text.contains("<dependencyManagement>")) {
+            failures << "plugin POM declares <dependencyManagement>; it would pin Grails/Spring versions on consumers"
+        }
+
+        def starterDep = (text =~ /<groupId>com\.tucanoo\.davkit<\/groupId>\s*<artifactId>davkit-spring-boot<\/artifactId>\s*<version>([^<]+)<\/version>/)
+        if (!starterDep.find()) {
+            failures << "plugin POM does not depend on com.tucanoo.davkit:davkit-spring-boot"
+        } else if (starterDep.group(1) != versionString) {
+            failures << "plugin POM depends on starter ${starterDep.group(1)}, expected ${versionString}"
+        }
+
+        files.each { inventory.append("  ${it.name}  (${it.length()} bytes)\n") }
+        def report = reportFile.get().asFile
+        report.parentFile.mkdirs()
+        report.text = inventory.toString()
+
+        if (!failures.isEmpty()) {
+            throw new GradleException(
+                "Release artifact guard failed:\n" + failures.collect { "  - ${it}" }.join("\n"))
+        }
+        logger.lifecycle("Release artifact guard passed. Inventory: ${report}")
+    }
+}
+
+tasks.register("centralBundle", Zip) {
+    group = "publishing"
+    description = "Zips the verified staging repository into a Central Portal upload bundle."
+    dependsOn tasks.named("verifyReleaseArtifacts")
+    // maven-metadata is a repository index, not a release artifact; the Portal builds its own.
+    from(stagingRepoDir) { exclude "**/maven-metadata.xml*" }
+    archiveFileName = "davkit-grails-plugin-central-${version}.zip"
+    destinationDirectory = layout.buildDirectory.dir("central")
+    doLast {
+        logger.lifecycle("Upload bundle: ${archiveFile.get().asFile}")
+    }
+}

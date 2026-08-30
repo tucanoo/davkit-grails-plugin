@@ -1,0 +1,69 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven {
+           url = 'https://repo.grails.org/grails/restricted'
+        }
+    }
+    dependencies { // Not Published to Gradle Plugin Portal
+        classpath platform("org.apache.grails:grails-bom:$grailsVersion")
+        classpath "org.apache.grails:grails-data-hibernate5"
+        classpath "org.apache.grails:grails-gradle-plugins"
+    }
+}
+
+plugins {
+    id "war"
+    id "idea"
+    id "eclipse"
+}
+
+// Not Published to Gradle Plugin Portal
+apply plugin: "org.apache.grails.gradle.grails-gsp"
+apply plugin: "org.apache.grails.gradle.grails-plugin"
+
+// group comes from the root build: com.tucanoo.davkit, the same as every other module.
+
+repositories {
+    // Scoped to DavKit's own group on purpose: ~/.m2 holds Maven-installed artifacts that have a
+    // POM but no Gradle module metadata, and letting those shadow real dependencies silently
+    // drops the constraints that metadata carries.
+    mavenLocal {
+        content { includeGroup "com.tucanoo.davkit" }
+    }
+    mavenCentral()
+    maven {
+       url = 'https://repo.grails.org/grails/restricted'
+    }
+}
+
+dependencies {
+    profile "org.apache.grails.profiles:plugin"
+    // The whole point of the plugin: hosts get the SPI and the starter's auto-configuration by
+    // depending on this plugin alone. Grails 7 = Boot 3, so the starter's
+    // META-INF/spring/...AutoConfiguration.imports registers everything; doWithSpring stays empty.
+    api "com.tucanoo.davkit:davkit-spring-boot:$version"
+    // Everything below is host-provided: every Grails application already ships these, so they
+    // stay compileOnly — the plugin must not pin Grails/Spring versions on its consumers (the
+    // single-plugin-for-7-and-8 policy; a Grails 8 host must not inherit 7.2.2 constraints).
+    // The Forge skeleton's full standalone-app dependency set was deliberately dropped: this
+    // module is a library, demo-grails is the runnable host.
+    compileOnly platform("org.apache.grails:grails-bom:$grailsVersion")
+    compileOnly "org.apache.grails:grails-core"          // grails.plugins.Plugin, artefact transforms
+    compileOnly "org.apache.grails:grails-gsp"           // taglib artefact support
+    compileOnly "org.springframework:spring-web"         // UriComponentsBuilder in the taglib
+    // Test-only, never reaches consumers. compileOnly is invisible to the test classpath, so
+    // the host-provided set reappears here at test scope.
+    testImplementation platform("org.apache.grails:grails-bom:$grailsVersion")
+    testImplementation "org.apache.grails:grails-core"
+    testImplementation "org.apache.grails:grails-gsp"
+    testImplementation "org.springframework:spring-web"
+    testImplementation "org.apache.grails:grails-testing-support-web"
+    testImplementation "org.spockframework:spock-core"
+}
+
+compileJava.options.release = 17
+
+tasks.withType(Test).configureEach {
+    useJUnitPlatform()
+}

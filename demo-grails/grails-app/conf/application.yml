@@ -1,0 +1,79 @@
+info:
+  app:
+    name: '@info.app.name@'
+    version: '@info.app.version@'
+    grailsVersion: '@info.app.grailsVersion@'
+grails:
+  codegen:
+    defaultPackage: com.tucanoo.davkit.demo
+  profile: web
+  mime:
+    types:
+      all: '*/*'
+      atom: application/atom+xml
+      css: text/css
+      csv: text/csv
+      form: application/x-www-form-urlencoded
+      html:
+      - text/html
+      - application/xhtml+xml
+      js: text/javascript
+      json:
+      - application/json
+      - text/json
+      multipartForm: multipart/form-data
+      pdf: application/pdf
+      rss: application/rss+xml
+      text: text/plain
+      hal:
+      - application/hal+json
+      - application/hal+xml
+      xml:
+      - text/xml
+      - application/xml
+  views:
+    gsp:
+      encoding: UTF-8
+      htmlcodec: xml
+      codecs:
+        scriptlet: html
+dataSource:
+  driverClassName: org.h2.Driver
+  username: sa
+  password: ''
+  pooled: true
+  jmxExport: true
+davkit:
+  path: /webdav
+  # No key ships with this demo. Put your own in DEMO_LICENSE_KEY (free evaluation keys:
+  # https://tucanoo.com/products/davkit). Without one the app boots normally and /webdav answers 503
+  # with the reason - everything outside DavKit still works.
+  license-key: ${DEMO_LICENSE_KEY:}
+environments:
+  development:
+    # Office trusts the OS store, not the browser's: generate the cert with mkcert (see the
+    # README); the root CA must be installed on the machine that runs Word.
+    server:
+      port: 8443
+      ssl:
+        # A classpath location rather than a file path, so it resolves the same under
+        # bootRun, an IDE run configuration and a built war. No working-directory dependency.
+        key-store: ${DEMO_KEYSTORE:classpath:certs/localhost.p12}
+        key-store-type: PKCS12
+        key-store-password: changeit
+    dataSource:
+      dbCreate: create-drop
+      url: jdbc:h2:mem:devDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
+  test:
+    dataSource:
+      dbCreate: update
+      url: jdbc:h2:mem:testDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
+  production:
+    dataSource:
+      dbCreate: none
+      url: jdbc:h2:./prodDb;LOCK_TIMEOUT=10000;DB_CLOSE_ON_EXIT=FALSE
+hibernate:
+  cache:
+    queries: false
+    use_second_level_cache: false
+    use_query_cache: false
