@@ -22,7 +22,7 @@ Office-aware WebDAV for Grails: expose application documents (GORM blobs, files,
 so Microsoft Word, Excel and PowerPoint open, lock, edit and save them back from one click,
 without the host becoming a file server.
 '''
-    def documentation = "https://github.com/tucanoo/davkit"
+    def documentation = "https://github.com/tucanoo/davkit-grails-plugin"
 
     // Bean registration is deliberately empty: DavKitAutoConfiguration does it all (verified by
     // demo-grails' integration test). Hand-register here only what auto-configuration provably

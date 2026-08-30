@@ -1,37 +1,66 @@
 # demo-grails
 
-The Grails mirror of `demo-spring-boot`, kept zero-setup: embedded in-memory H2, no Postgres, no
-Docker, no login. Three GORM `Document` rows seeded with a minimal `.docx`, `.xlsx` and `.pptx`
-(generated in `BootStrap`, no binary fixtures), one page whose edit links are rendered by the
-plugin's `davkit:editLink` taglib as signed URLs — the taglib picks `ms-word:` / `ms-excel:` /
-`ms-powerpoint:` and the label per extension.
+A Grails host with an in-memory H2 database and three generated documents: a `.docx`, an `.xlsx`
+and a `.pptx`. The plugin's `davkit:editLink` tag renders links for desktop Word, Excel and
+PowerPoint. Saves update the GORM rows; all data disappears when the application stops.
 
-```bash
-DEMO_LICENSE_KEY=<your key> ./gradlew :demo-grails:bootRun
+This is a local development demo. It has no login and grants read/write access to every
+seeded document. Anyone who can load the page can obtain its signed edit links. The embedded
+database uses user `sa` with an empty password. Do not expose the application to the internet
+or use it for sensitive documents.
+
+## Run
+
+Start in the `davkit-grails-plugin` repository root, not this module directory. You need
+Java 17, desktop Office for a manual edit test, and the matching DavKit binary dependencies
+described in the [repository README](../README.md). The current `0.3.0-SNAPSHOT` DavKit binaries are
+not yet available from Maven Central. No separate database or Docker setup is needed.
+
+Request a licence key through the [evaluation form](https://tucanoo.com/products/davkit/#evaluation-form).
+No key is included. Set `DEMO_LICENSE_KEY` in your local environment before starting the demo.
+Without a valid key, DavKit endpoints return 503 with the reason.
+
+Install [mkcert](https://github.com/FiloSottile/mkcert), then create the ignored certificate
+directory and a certificate for this machine:
+
+```sh
+mkdir -p demo-grails/src/main/resources/certs
+mkcert -install
+mkcert -pkcs12 -p12-file demo-grails/src/main/resources/certs/localhost.p12 localhost 127.0.0.1 ::1
 ```
 
-DavKit needs a licence key for all operation and this repository ships none, deliberately — a key
-committed to a demo is a key anyone can use, and verification is offline, so there would be no way
-to withdraw it. Free evaluation keys: <https://tucanoo.com/products/davkit>. Without a key the demo still
-boots and the page renders; only `/webdav/**` answers 503 with the reason. The integration test
-needs no key: helpers in `src/integration-test` supply the starter's primary internal test state and are absent from
-normal builds and every published artifact.
+`mkcert -install` adds its local CA to your trust store. The machine running Office must trust
+that CA too; accepting a browser certificate warning is not enough. Never share the CA's
+private key. Use a certificate with the correct hostname if Office runs on another machine.
 
-Development mode serves **https://localhost:8443**. Office trusts the OS certificate store
-rather than the browser's, so the mkcert root CA must be installed on the machine running Office.
-The `mkcert` command is in the repository README; it writes the keystore to
-`src/main/resources/certs/localhost.p12`, which this demo loads as `classpath:certs/localhost.p12`.
-`certs/` is gitignored, so a fresh clone has none until you generate one.
+With `DEMO_LICENSE_KEY` set, run:
 
-The keystore is a classpath location rather than a file path on purpose: `gradlew bootRun` starts
-in the module directory and an IDE run configuration usually starts in the repository root, and a
-relative file path cannot satisfy both. `DEMO_KEYSTORE` takes a full Spring resource location, so
-`file:/absolute/path.p12` works for a certificate kept outside the project. Click a link, let Word/Excel/PowerPoint open it, Enable
-Editing, type, Ctrl+S; the row updates (and vanishes on restart — it's an in-memory database).
+```sh
+./gradlew :demo-grails:bootRun
+```
 
-`src/integration-test/.../WordSequenceSpec.groovy` boots the real server and replays the Word
-verb sequence over HTTP with the JDK client. Run with
-`./gradlew :demo-grails:integrationTest`.
+Development mode serves [https://localhost:8443/](https://localhost:8443/). Click an edit link,
+enable editing if Office asks, make a change and save. Reload the page to check the row's
+version and timestamp.
 
-Skeleton generated from Grails Forge (`latest.grails.org`, type `web`; parameters in
-`grails-forge-cli.yml`).
+The default keystore is `classpath:certs/localhost.p12`, with password `changeit`. Set
+`DEMO_KEYSTORE` to a Spring resource location such as `file:/absolute/path/localhost.p12` to
+use a different file. Change `server.ssl.key-store-password` in the development configuration
+if that file has a different password. Keep generated certificates and keys out of commits
+and distributed application packages.
+
+## Code and checks
+
+[GormDocumentProvider](src/main/groovy/com/tucanoo/davkit/demo/GormDocumentProvider.groovy) implements
+the storage operations, and [resources.groovy](grails-app/conf/spring/resources.groovy) registers
+it. The [GSP](grails-app/views/home/index.gsp) renders the edit links.
+
+Run the integration tests from the repository root:
+
+```sh
+./gradlew :demo-grails:integrationTest
+```
+
+Tests use the embedded database and exercise the real server's HTTP lock/read/write sequence.
+They need no licence key or TLS certificate. A manual Office session is still needed to check
+that a document opens without a repair prompt and saves correctly on your client.

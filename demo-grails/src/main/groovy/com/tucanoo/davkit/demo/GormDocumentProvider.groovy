@@ -51,6 +51,11 @@ class GormDocumentProvider extends GormDavResourceProvider {
         if (doc == null) {
             throw new DavPreconditionFailedException('document deleted')
         }
+        // Compare with the servlet's resolved version before accepting a newer ORM baseline.
+        // Optimistic locking below still catches changes committed after this reload.
+        if (resource.etag() != "${doc.id}-${doc.version}".toString()) {
+            throw new DavPreconditionFailedException('document changed concurrently')
+        }
         doc.bytes = request.content().open().withCloseable { it.readAllBytes() }
         try {
             doc.save(flush: true, failOnError: true)
