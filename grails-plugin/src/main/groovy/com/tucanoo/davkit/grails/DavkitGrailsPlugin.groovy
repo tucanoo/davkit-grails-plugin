@@ -12,7 +12,7 @@ import grails.plugins.Plugin
  */
 class DavkitGrailsPlugin extends Plugin {
 
-    def grailsVersion = "7.2.2  > *"
+    def grailsVersion = "7.0.0 > *"
 
     def title = "DavKit"
     def author = "Tucanoo Solutions Ltd"

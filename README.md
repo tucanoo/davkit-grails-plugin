@@ -29,6 +29,7 @@ licence does not grant rights to the core. No key is included.
 | Java | Java 17 bytecode and build toolchain |
 | Gradle | 8.14.5, wrapper included |
 | Grails | Plugin and demo build against 7.2.2 |
+| Spring Boot | 3.5.16, managed by Grails 7.2.2 |
 | Grails 8 | A manual host check was recorded for 8.0.0-M5 on Java 25 on 2026-08-29 |
 
 The Grails 8 milestone check is not part of this repository's Gradle test suite and does
