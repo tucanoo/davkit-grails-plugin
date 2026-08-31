@@ -10,12 +10,14 @@
     Each link is a signed URL (8&nbsp;h) rendered by the plugin's <code>&lt;davkit:editLink&gt;</code>
     taglib. Clicking hands the URL to Office, which opens, locks, edits and saves the row over WebDAV.
 </p>
+<button type="button" class="btn btn-secondary mb-3" onclick="window.location.reload()">Refresh</button>
 <table class="table table-striped align-middle">
     <thead>
     <tr>
         <th>Name</th>
         <th>Size</th>
-        <th>Last updated</th>
+        <th>Version</th>
+        <th>Updated</th>
         <th></th>
     </tr>
     </thead>
@@ -24,6 +26,7 @@
         <tr>
             <td>${doc.name}</td>
             <td>${doc.bytes.length} bytes</td>
+            <td>${doc.version}</td>
             <td><g:formatDate date="${doc.lastUpdated}" format="yyyy-MM-dd HH:mm:ss"/></td>
             <td><davkit:editLink path="documents/${doc.name}"/></td>
         </tr>

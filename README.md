@@ -95,8 +95,9 @@ Deploy at the container's root context. Office sends discovery requests to the o
 
 ## Demo and reporting
 
-The [demo instructions](demo-grails/README.md) cover the local HTTPS certificate and embedded
-H2 database. The demo has no login or per-document access restrictions; keep it on a
+The [demo instructions](demo-grails/README.md) use in-memory H2 and local HTTP, with no
+database server or certificate setup. An optional HTTPS profile is available for Office
+testing. The demo has no login or per-document access restrictions; keep it on a
 development machine.
 
 For bugs and changes, see [CONTRIBUTING.md](CONTRIBUTING.md). Report vulnerabilities privately

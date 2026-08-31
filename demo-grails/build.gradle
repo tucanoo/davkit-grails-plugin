@@ -44,7 +44,6 @@ dependencies {
     developmentOnly "org.springframework.boot:spring-boot-devtools" // Spring Boot DevTools may cause performance slowdowns or compatibility issues on larger applications
     testAndDevelopmentOnly "org.webjars.npm:bootstrap"
     testAndDevelopmentOnly "org.webjars.npm:bootstrap-icons"
-    testAndDevelopmentOnly "org.webjars.npm:jquery"
     // Everything DavKit: the plugin brings the starter, the SPI, the taglib and the GORM helper.
     implementation project(":davkit-grails-plugin")
     implementation platform("org.apache.grails:grails-bom:$grailsVersion")
@@ -87,13 +86,10 @@ tasks.withType(Test).configureEach {
 
 assets {
     excludes = [
-            'webjars/jquery/**',
             'webjars/bootstrap/**',
             'webjars/bootstrap-icons/**'
     ]
     includes = [
-            'webjars/jquery/*/dist/jquery.js',
-            'webjars/bootstrap/*/dist/js/bootstrap.bundle.js',
             'webjars/bootstrap/*/dist/css/bootstrap.css',
             'webjars/bootstrap-icons/*/font/bootstrap-icons.css',
             'webjars/bootstrap-icons/*/font/fonts/*',

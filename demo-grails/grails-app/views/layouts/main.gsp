@@ -77,11 +77,5 @@
         </div>
     </div>
 </footer>
-<div id="spinner" class="position-absolute top-0 end-0 p-1" style="display:none;">
-    <div class="spinner-border spinner-border-sm" role="status">
-        <span class="visually-hidden">Loading...</span>
-    </div>
-</div>
-<asset:javascript src="application.js"/>
 </body>
 </html>
