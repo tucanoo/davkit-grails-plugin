@@ -42,7 +42,7 @@ dependencies {
     // The whole point of the plugin: hosts get the SPI and the starter's auto-configuration by
     // depending on this plugin alone. Grails 7 = Boot 3, so the starter's
     // META-INF/spring/...AutoConfiguration.imports registers everything; doWithSpring stays empty.
-    api "com.tucanoo.davkit:davkit-spring-boot:$version"
+    api "com.tucanoo.davkit:davkit-spring-boot-starter:$version"
     // Everything below is host-provided: every Grails application already ships these, so they
     // stay compileOnly — the plugin must not pin Grails/Spring versions on its consumers (the
     // single-plugin-for-7-and-8 policy; a Grails 8 host must not inherit 7.2.2 constraints).

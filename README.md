@@ -7,15 +7,15 @@ The dependency coordinates for this checkout are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:0.3.0-SNAPSHOT"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.10-beta.1"
 }
 ```
 
-This is prerelease source. The plugin, `com.tucanoo.davkit:davkit-spring-boot` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `0.3.0-SNAPSHOT`.
-The matching DavKit artifacts are not yet available from Maven Central. Before using the
-dependency or building from source, ask [dave@tucanoo.com](mailto:dave@tucanoo.com) about
-binary access and repository setup. A licence key alone does not supply the dependencies.
+This is a beta release. The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.10-beta.1` and resolve
+from Maven Central. If the coordinates do not resolve for you, ask
+[dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
+dependencies.
 
 Request a key through the [evaluation form](https://tucanoo.com/products/davkit/#evaluation-form).
 The plugin and demo source in this repository are licensed under [Apache 2.0](LICENSE).
@@ -48,7 +48,7 @@ Once matching starter and core binaries are available, run from this repository 
 
 The build resolves DavKit binaries from Maven Local or Maven Central. Contributors do not
 need proprietary core source. Maintainers with authorised sibling checkouts can use
-`../davkit-core` and `../davkit-spring-boot` as optional composite builds; Gradle detects
+`../davkit-core` and `../davkit-spring-boot-starter` as optional composite builds; Gradle detects
 each directory and substitutes its projects for Maven dependencies. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for checks and the remaining public-release requirements.
 
@@ -84,7 +84,7 @@ The tag chooses Word, Excel or PowerPoint from the filename extension.
 
 Set `davkit.enabled=false` to disable DavKit's servlet, filters, firewall and supporting
 beans. If the application uses Spring Security, configure a separate WebDAV chain without
-CSRF or form-login redirects; the [starter documentation](https://github.com/tucanoo/davkit-spring-boot#wiring-the-starter-into-a-host)
+CSRF or form-login redirects; the [starter documentation](https://github.com/tucanoo/davkit-spring-boot-starter#wiring-the-starter-into-a-host)
 explains the host configuration.
 
 Installations sharing an OEM licence derive the same signing key. Configure distinct

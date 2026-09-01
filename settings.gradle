@@ -13,6 +13,6 @@ project(":grails-plugin").name = "davkit-grails-plugin"
 if (file("../davkit-core").isDirectory()) {
     includeBuild("../davkit-core")
 }
-if (file("../davkit-spring-boot").isDirectory()) {
-    includeBuild("../davkit-spring-boot")
+if (file("../davkit-spring-boot-starter").isDirectory()) {
+    includeBuild("../davkit-spring-boot-starter")
 }

@@ -291,9 +291,9 @@ tasks.register("verifyReleaseArtifacts") {
             failures << "plugin POM declares <dependencyManagement>; it would pin Grails/Spring versions on consumers"
         }
 
-        def starterDep = (text =~ /<groupId>com\.tucanoo\.davkit<\/groupId>\s*<artifactId>davkit-spring-boot<\/artifactId>\s*<version>([^<]+)<\/version>/)
+        def starterDep = (text =~ /<groupId>com\.tucanoo\.davkit<\/groupId>\s*<artifactId>davkit-spring-boot-starter<\/artifactId>\s*<version>([^<]+)<\/version>/)
         if (!starterDep.find()) {
-            failures << "plugin POM does not depend on com.tucanoo.davkit:davkit-spring-boot"
+            failures << "plugin POM does not depend on com.tucanoo.davkit:davkit-spring-boot-starter"
         } else if (starterDep.group(1) != versionString) {
             failures << "plugin POM depends on starter ${starterDep.group(1)}, expected ${versionString}"
         }
