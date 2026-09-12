@@ -13,7 +13,7 @@ or use it for sensitive documents. HTTP does not encrypt document contents or si
 
 Start in the `davkit-grails-plugin` repository root, not this module directory. You need
 Java 17, desktop Office for a manual edit test, and the matching DavKit binary dependencies
-described in the [repository README](../README.md). The `1.0.10-beta.1` DavKit binaries resolve
+described in the [repository README](../README.md). The `1.0.10` DavKit binaries resolve
 from Maven Central. No Docker, separate database, mkcert or `.p12` file is needed.
 
 Request a licence key through the [evaluation form](https://tucanoo.com/products/davkit/#evaluation-form).

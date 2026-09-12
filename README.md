@@ -7,12 +7,12 @@ The dependency coordinates for this checkout are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.10-beta.1"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.10"
 }
 ```
 
-This is a beta release. The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.10-beta.1` and resolve
+DavKit 1.0.10 has exited beta. The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.10` and resolve
 from Maven Central. If the coordinates do not resolve for you, ask
 [dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
 dependencies.
