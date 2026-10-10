@@ -3,19 +3,21 @@
 The Grails plugin for [DavKit](https://tucanoo.com/products/davkit/). It adds the
 `davkit:editLink` taglib and `GormDavResourceProvider` base class to the Spring Boot starter.
 
-The dependency coordinates for this checkout are:
+The dependency coordinates are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.10"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.11"
 }
 ```
 
-DavKit 1.0.10 has exited beta. The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.10` and resolve
+The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.11` and resolve
 from Maven Central. If the coordinates do not resolve for you, ask
 [dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
 dependencies.
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release.
 
 Request a key through the [evaluation form](https://tucanoo.com/products/davkit/#evaluation-form).
 The plugin and demo source in this repository are licensed under [Apache 2.0](LICENSE).
@@ -76,7 +78,7 @@ Render an edit link for a document exposed by the provider:
 <davkit:editLink path="documents/${document.name}" />
 ```
 
-**Unreleased; unavailable in 1.0.10:** `editLink` also accepts `class`, `id`, `title`,
+`editLink` also accepts `class`, `id`, `title`,
 `aria-*` and `data-*` attributes for the generated anchor:
 
 ```gsp
@@ -116,6 +118,8 @@ A missing, invalid or expired licence key causes DavKit endpoints to return 503 
 
 Deploy at the container's root context. Office sends discovery requests to the origin's
 `/`, which an application mounted under a context path cannot receive.
+The underlying starter logs a WARN at startup when the actual
+servlet context is not the root context, including container-assigned WAR context paths.
 
 ## Startup logging
 
