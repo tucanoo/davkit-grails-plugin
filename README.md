@@ -76,6 +76,21 @@ Render an edit link for a document exposed by the provider:
 <davkit:editLink path="documents/${document.name}" />
 ```
 
+**Unreleased; unavailable in 1.0.10:** `editLink` also accepts `class`, `id`, `title`,
+`aria-*` and `data-*` attributes for the generated anchor:
+
+```gsp
+<davkit:editLink path="documents/${document.name}"
+                 class="document-edit"
+                 id="edit-document-${document.id}"
+                 title="Edit document"
+                 aria-label="Edit document in Office"
+                 data-document-id="${document.id}" />
+```
+
+Use your own CSS for `document-edit`. Attribute values are HTML-encoded, and DavKit
+continues to generate the signed Office `href`.
+
 The tag uses the authenticated request principal as its signing subject, falling back to
 `anonymous` when there is no principal. An explicit `user` attribute must come from a
 trusted identity, never a request parameter. Signed links are bearer credentials, so only
