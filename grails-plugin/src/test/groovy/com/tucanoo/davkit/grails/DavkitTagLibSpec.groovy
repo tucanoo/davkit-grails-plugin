@@ -66,6 +66,37 @@ class DavkitTagLibSpec extends Specification implements TagLibUnitTest<DavkitTag
         applyTemplate('<davkit:editLink path="d/x.docx">Open it</davkit:editLink>').contains('>Open it</a>')
     }
 
+    void 'renders supported anchor attributes without exposing tag inputs or replacing href'() {
+        when:
+        String html = applyTemplate('''<davkit:editLink path="documents/Report.docx" user="alice"
+            class="btn btn-primary" id="edit-report" title="Edit report"
+            aria-label="Edit in Word" data-document-id="42"
+            href="https://other.example.com/" onclick="alert(1)">Open it</davkit:editLink>''')
+
+        then:
+        href(html) == 'ms-word:ofe|u|http://localhost/webdav/documents/Report.docx'
+        html.contains('class="btn btn-primary"')
+        html.contains('id="edit-report"')
+        html.contains('title="Edit report"')
+        html.contains('aria-label="Edit in Word"')
+        html.contains('data-document-id="42"')
+        !html.contains(' path=')
+        !html.contains(' user=')
+        !html.contains('other.example.com')
+        !html.contains('onclick=')
+        html.contains('>Open it</a>')
+    }
+
+    void 'HTML encodes anchor attribute values'() {
+        when:
+        String html = applyTemplate('<davkit:editLink path="d/x.docx" title="${label}"/>',
+                [label: 'A "quote" & <tag>'])
+
+        then:
+        html.contains('title="A &quot;quote&quot; &amp; &lt;tag&gt;"')
+        !html.contains('title="A "quote"')
+    }
+
     void 'default link text resolves through the message source by scheme key'() {
         given: 'the host (here: the test) defines the key the plugin bundle ships'
         messageSource.addMessage('davkit.editLink.ms-excel', request.locale, 'In Excel bearbeiten')

@@ -3,19 +3,21 @@
 The Grails plugin for [DavKit](https://tucanoo.com/products/davkit/). It adds the
 `davkit:editLink` taglib and `GormDavResourceProvider` base class to the Spring Boot starter.
 
-The dependency coordinates for this checkout are:
+The dependency coordinates are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.10"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.11"
 }
 ```
 
-DavKit 1.0.10 has exited beta. The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.10` and resolve
+The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.11` and resolve
 from Maven Central. If the coordinates do not resolve for you, ask
 [dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
 dependencies.
+
+See [CHANGELOG.md](CHANGELOG.md) for the changes in each release.
 
 Request a key through the [evaluation form](https://tucanoo.com/products/davkit/#evaluation-form).
 The plugin and demo source in this repository are licensed under [Apache 2.0](LICENSE).
@@ -76,6 +78,21 @@ Render an edit link for a document exposed by the provider:
 <davkit:editLink path="documents/${document.name}" />
 ```
 
+`editLink` also accepts `class`, `id`, `title`,
+`aria-*` and `data-*` attributes for the generated anchor:
+
+```gsp
+<davkit:editLink path="documents/${document.name}"
+                 class="document-edit"
+                 id="edit-document-${document.id}"
+                 title="Edit document"
+                 aria-label="Edit document in Office"
+                 data-document-id="${document.id}" />
+```
+
+Use your own CSS for `document-edit`. Attribute values are HTML-encoded, and DavKit
+continues to generate the signed Office `href`.
+
 The tag uses the authenticated request principal as its signing subject, falling back to
 `anonymous` when there is no principal. An explicit `user` attribute must come from a
 trusted identity, never a request parameter. Signed links are bearer credentials, so only
@@ -83,7 +100,15 @@ render them for users who may access the document and keep them out of logs and 
 The tag chooses Word, Excel or PowerPoint from the filename extension.
 
 Set `davkit.enabled=false` to disable DavKit's servlet, filters, firewall and supporting
-beans. If the application uses Spring Security, configure a separate WebDAV chain without
+beans. The starter evaluates this switch as an auto-configuration condition, including in
+Grails apps, so it must be present in Spring's `Environment` when auto-configuration runs.
+Use normal [Spring Boot external configuration](https://docs.spring.io/spring-boot/3.5/reference/features/external-config.html),
+such as an external file selected with `spring.config.additional-location` at launch.
+If you need a custom configuration loader, use an `EnvironmentPostProcessor` to load it
+before the application context is refreshed. Loading configuration later in an Application
+bean's `setEnvironment()` does not re-evaluate the condition.
+
+If the application uses Spring Security, configure a separate WebDAV chain without
 CSRF or form-login redirects; the [starter documentation](https://github.com/tucanoo/davkit-spring-boot-starter#wiring-the-starter-into-a-host)
 explains the host configuration.
 
@@ -93,6 +118,23 @@ A missing, invalid or expired licence key causes DavKit endpoints to return 503 
 
 Deploy at the container's root context. Office sends discovery requests to the origin's
 `/`, which an application mounted under a context path cannot receive.
+The underlying starter logs a WARN at startup when the actual
+servlet context is not the root context, including container-assigned WAR context paths.
+
+## Startup logging
+
+DavKit logs under `com.tucanoo.davkit`. To ensure you can see its startup summary, add this to `grails-app/conf/application.yml`:
+
+```yaml
+logging:
+  level:
+    com.tucanoo.davkit: INFO
+```
+
+The `DavKit ready:` summary is logged at INFO and lists the WebDAV path, provider mounts,
+authentication, lock store and licence state. Missing, invalid or refused licence keys
+are logged at ERROR; the host application still starts, while DavKit endpoints return 503.
+The setting above also makes DavKit's WARN messages visible.
 
 ## Demo and reporting
 

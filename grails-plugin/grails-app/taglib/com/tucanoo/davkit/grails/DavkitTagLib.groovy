@@ -60,7 +60,14 @@ class DavkitTagLib {
                 ? origin + davSignedUrls.path(user, docPath)
                 : origin + (davServletConfig != null ? davServletConfig.path() : '/webdav') + '/' + PercentCodec.encodePath(docPath)
         String scheme = officeScheme(docPath)
-        out << '<a href="' << "${scheme}:ofe|u|${url}".encodeAsHTML() << '">'
+        out << '<a href="' << "${scheme}:ofe|u|${url}".encodeAsHTML() << '"'
+        attrs.each { name, value ->
+            if (value != null && (name in ['class', 'id', 'title']
+                    || name ==~ /(?:aria|data)-[A-Za-z0-9_.:-]+/)) {
+                out << ' ' << name << '="' << String.valueOf(value).encodeAsHTML() << '"'
+            }
+        }
+        out << '>'
         String text = body()
         // Default text comes from the plugin's message bundle (davkit.editLink.<scheme>), so
         // hosts translate or rebrand it in their own messages*.properties instead of overriding
