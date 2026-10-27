@@ -8,7 +8,7 @@ Use [SECURITY.md](SECURITY.md) for vulnerabilities; do not disclose them in publ
 ## Build and check
 
 Use Java 17 and the included Gradle wrapper. Read the [README](README.md) before building:
-this checkout needs matching `1.0.11` starter and core binaries from Maven Central or
+this checkout needs matching `1.0.12` starter and core binaries from Maven Central or
 Maven Local, or authorised sibling checkouts.
 Ask [dave@tucanoo.com](mailto:dave@tucanoo.com) about binary access
 and repository setup. Proprietary core source is not required for contributions to this

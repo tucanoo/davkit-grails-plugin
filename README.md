@@ -7,12 +7,12 @@ The dependency coordinates are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.11"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.12"
 }
 ```
 
 The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.11` and resolve
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.12` and resolve
 from Maven Central. If the coordinates do not resolve for you, ask
 [dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
 dependencies.
@@ -120,6 +120,21 @@ Deploy at the container's root context. Office sends discovery requests to the o
 `/`, which an application mounted under a context path cannot receive.
 The underlying starter logs a WARN at startup when the actual
 servlet context is not the root context, including container-assigned WAR context paths.
+
+The starter enables its Office discovery filter on `/*` for the entire application context,
+independently of `davkit.path` (default `/webdav`). A root-context deployment therefore covers
+the whole host. DAV paths pass through. Office OPTIONS/HEAD/PROPFIND at the application root
+get DAV discovery responses; at other non-DAV paths those methods get empty 404s.
+SharePoint/FrontPage paths (`/_api`, `/_api/…`, paths containing `/_vti_`, and the `/_layouts/`,
+`/_catalog/`, `/hosting/` prefixes) retain stubs or clean 404s for all user agents and methods.
+
+Since 1.0.12, other methods, including Office GET/POST to application pages, login pages and
+Outlook email images, continue through the application's normal security filters. Known
+discovery paths still intercept GET/POST. HEAD handling is unchanged: an Office HEAD outside
+the DAV path and application root still gets 404 even when the application's GET succeeds.
+Set `davkit.office.discovery-filter=false` to disable the entire filter; Word's root probes
+then reach host security and may be redirected to login. `davkit.office.share-point-stubs=false`
+changes `/_api` stubs to clean 404s, rather than passing those paths to the application.
 
 ## Startup logging
 

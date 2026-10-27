@@ -13,7 +13,7 @@ or use it for sensitive documents. HTTP does not encrypt document contents or si
 
 Start in the `davkit-grails-plugin` repository root, not this module directory. You need
 Java 17, desktop Office for a manual edit test, and the matching DavKit binary dependencies
-described in the [repository README](../README.md). Use matching `1.0.11` starter and core
+described in the [repository README](../README.md). Use matching `1.0.12` starter and core
 binaries from Maven Central or Maven Local, or authorised sibling checkouts.
 No Docker, separate database, mkcert or `.p12` file is needed.
 
