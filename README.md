@@ -7,12 +7,12 @@ The dependency coordinates are:
 
 ```groovy
 dependencies {
-    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.12"
+    implementation "com.tucanoo.davkit:davkit-grails-plugin:1.0.13"
 }
 ```
 
 The plugin, `com.tucanoo.davkit:davkit-spring-boot-starter` and the
-proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.12` and resolve
+proprietary `com.tucanoo.davkit:davkit-server` dependency all use `1.0.13` and resolve
 from Maven Central. If the coordinates do not resolve for you, ask
 [dave@tucanoo.com](mailto:dave@tucanoo.com); a licence key alone does not supply the
 dependencies.
@@ -121,20 +121,22 @@ Deploy at the container's root context. Office sends discovery requests to the o
 The underlying starter logs a WARN at startup when the actual
 servlet context is not the root context, including container-assigned WAR context paths.
 
-The starter enables its Office discovery filter on `/*` for the entire application context,
-independently of `davkit.path` (default `/webdav`). A root-context deployment therefore covers
-the whole host. DAV paths pass through. Office OPTIONS/HEAD/PROPFIND at the application root
-get DAV discovery responses; at other non-DAV paths those methods get empty 404s.
-SharePoint/FrontPage paths (`/_api`, `/_api/…`, paths containing `/_vti_`, and the `/_layouts/`,
-`/_catalog/`, `/hosting/` prefixes) retain stubs or clean 404s for all user agents and methods.
+The starter enables its Office discovery filter on `/*` across the entire application
+context, independently of `davkit.path` (default `/webdav`). Root-context deployment therefore
+covers the whole host. Requests under `davkit.path` pass through. Outside it, the filter handles
+Office root OPTIONS/HEAD/PROPFIND and SharePoint/FrontPage locations (`/_api`, `/_api/…`, paths
+containing `/_vti_`, and the `/_layouts/`, `/_catalog/`, `/hosting/` prefixes). Those path-based
+handlers retain their stubs or clean 404s for all user agents and methods, including GET/POST.
 
-Since 1.0.12, other methods, including Office GET/POST to application pages, login pages and
-Outlook email images, continue through the application's normal security filters. Known
-discovery paths still intercept GET/POST. HEAD handling is unchanged: an Office HEAD outside
-the DAV path and application root still gets 404 even when the application's GET succeeds.
-Set `davkit.office.discovery-filter=false` to disable the entire filter; Word's root probes
-then reach host security and may be redirected to login. `davkit.office.share-point-stubs=false`
-changes `/_api` stubs to clean 404s, rather than passing those paths to the application.
+Every other request passes through the application and its normal security filters, regardless
+of method or user agent. In 1.0.13 there is no final catch-all: Outlook OPTIONS requests to a
+link's parent folder and HEAD requests to the linked resource receive the host's normal
+responses, as do Office GET/POST requests and email image fetches. The host controls resource
+metadata, allowed methods, authentication and redirects; DavKit adds no DAV headers there.
+
+`davkit.office.discovery-filter=false` disables the entire filter, allowing Word's root probes
+to reach host security and potentially a login redirect. `davkit.office.share-point-stubs=false`
+changes `/_api` stubs to clean 404s; it does not pass those paths through.
 
 ## Startup logging
 
