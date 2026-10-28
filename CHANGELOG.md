@@ -2,6 +2,13 @@
 
 DavKit components use the same exact version and release together.
 
+## 1.0.13 — 2026-10-28
+
+- Updated the starter and transitive core dependencies to 1.0.13. Outlook OPTIONS/HEAD
+  link probes now reach the application instead of receiving discovery 404s.
+- Revised the discovery-scope documentation: only root Office probes and known
+  SharePoint/FrontPage paths are handled outside the configured DAV endpoint.
+
 ## 1.0.12 — 2026-10-27
 
 - Updated the starter and transitive core dependencies to 1.0.12, fixing Office GET/POST
